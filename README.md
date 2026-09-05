@@ -70,8 +70,25 @@ Desktop queries the database directly. Keep it and the database running while
 exploring. **Query → SQL → PostgreSQL is a different, table-import workflow**;
 it is not the connection path used here.
 
-For a live replay display, [import the PaySim dashboard](connect/README.md#6-load-the-live-paysim-dashboard).
-The guide includes screenshots showing where to find it.
+## Live PaySim dashboard
+
+Explore the replay through **14 cards**: transaction totals, payment volume,
+synthetic fraud-labelled value, daily activity, shared-identifier evidence,
+recipient flows, mule receipts and merchant destinations. Database cards refresh
+every **5–10 seconds** while open. Synthetic labels are test fixtures, not fraud
+verdicts.
+
+In your connected project, choose **Dashboard → Import** and select
+[`paysim-alloydb-full.dashboard.json`](demos/paysim-schemaless/kineviz/paysim-alloydb-full.dashboard.json).
+Reopen it through **Dashboard → PaySim · AlloyDB full (imported)**.
+
+![Full PaySim dashboard on AlloyDB after replay](docs/images/alloydb-full-dashboard.jpg)
+
+Shown after all **12,033 transactions** have landed; scroll inside the dashboard
+for the remaining cards. To watch it grow, begin with the
+[actors-only replay setup](streaming/README.md#start-from-actors-and-identifiers-only),
+then run `./gxr replay`. See the
+[dashboard guide](connect/README.md#6-load-the-live-paysim-dashboard) for details.
 
 ## Examples
 
