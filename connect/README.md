@@ -169,6 +169,11 @@ against the full 12,033-transaction dataset. Refresh intervals are 5–10 second
 Identity categories describe direct-transfer evidence, not confirmed fraud.
 The canvas-selection card follows your canvas selection; no graph is auto-loaded.
 
+![Full AlloyDB dashboard after replay, showing 12033 transactions, risk KPIs and charts](../docs/images/alloydb-full-dashboard.jpg)
+
+Top of the full dashboard after replay. Scroll within the dashboard to see the
+remaining cards, including size bands, mule receipts and merchant destinations.
+
 The earlier **six-card quick view** remains available separately:
 
 In your connected PaySim project, click **Dashboard** in the left sidebar, then
