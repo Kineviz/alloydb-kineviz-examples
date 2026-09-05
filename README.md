@@ -58,6 +58,12 @@ Now follow **[connect/README.md](connect/README.md)**:
    and the read-only credentials from `secrets/reader.env`.
 5. Confirm the project, check its schema, and run a [canvas query](demos/paysim-schemaless/queries/canvas/02-payments.sql).
 
+![Kineviz Desktop's native AlloyDB connection form with the local demo settings](docs/images/alloydb-connection-fields.jpg)
+
+Desktop 0.19.0 connection setup. The password is intentionally blank in this
+screenshot; enter your reader password before confirming. See the
+[illustrated connection guide](connect/README.md#4-create-the-project) for each step.
+
 Desktop queries the database directly. Keep it and the database running while
 exploring. **Query → SQL → PostgreSQL is a different, table-import workflow**;
 it is not the connection path used here.

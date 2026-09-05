@@ -110,6 +110,26 @@ For the other demos use graph `fraud_graph` or `fleet_graph`. Specify Graph Name
 whenever the database contains more than one graph; auto-detection then becomes
 ambiguous.
 
+### Connection setup screenshots
+
+Captured in Kineviz Desktop **0.19.0** on September 5, 2026. These show the
+unsubmitted setup form, not a verified connection. The password is intentionally
+blank; use your own reader password before clicking **Confirm**.
+
+**Start from scratch and name the project.**
+
+![Create New Project page with AlloyDB PaySim as the project name](../docs/images/alloydb-new-project.jpg)
+
+**Choose Google AlloyDB Omni under GQL / PGQL.** The connector requires
+PostgreSQL 19+; it is not the PostgreSQL table-import workflow.
+
+![Database Type picker with Google AlloyDB Omni selected under GQL / PGQL](../docs/images/alloydb-connector-picker.jpg)
+
+**Enter the local connection settings.** Keep the host and port in separate
+fields, and specify `paysim_graph` for the PaySim demo.
+
+![AlloyDB connection fields populated with the local demo settings and a blank password](../docs/images/alloydb-connection-fields.jpg)
+
 ## 5. Verify a live graph query and expansion
 
 In the project's **Query** panel—not its SQL import tab—run:
