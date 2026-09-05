@@ -1,7 +1,7 @@
 # Edge fleet dependencies
 
 ```bash
-./gxr up edge-fleet
+./gxr start edge-fleet
 ./gxr verify edge-fleet
 ```
 

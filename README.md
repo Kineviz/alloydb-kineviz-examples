@@ -33,21 +33,23 @@ Windows run the shell steps in WSL2 and install the Windows Desktop application.
 From this repository's root:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python tools/init_env.py
-docker compose up -d --wait db
-docker compose exec db psql -U postgres -v ON_ERROR_STOP=1 \
-  -c 'CREATE DATABASE kineviz_demo' \
-  -c 'ALTER DATABASE kineviz_demo SET search_path TO paysim_demo, fraud_demo, fleet_demo, public'
-./gxr up paysim-schemaless
-.venv/bin/python tools/create_reader.py
+./gxr start
 ```
 
-`CREATE DATABASE` and credential initialization are **one-time steps**. On later
-runs use `docker compose up -d --wait db` and `./gxr up <demo>`. A failed load or
-verification rolls back its database transaction. Setup never clears an existing
-schema. It refuses schemas not marked as belonging to this repo.
+That one command creates the Python environment, installs pinned dependencies,
+initializes local credentials if absent, starts the database, creates the demo
+database if needed, loads and verifies PaySim, and configures and checks a
+read-only Desktop login. Docker must already be running.
+
+Want all three demos? Run **`./gxr start all`** instead. Rerun either command to
+resume: existing passwords and data are preserved. Newly loaded demo schemas
+are added to the reader's access. A failed demo load or verification rolls back
+that demo's transaction; earlier successful demos remain. Setup refuses schemas
+not marked as belonging to this repo and never resets a replay.
+
+`start` manages only this repo's default local Compose database. For an existing
+compatible database configured separately in `.env`, use `./gxr up <demo>` and
+the reader helper in the [connection guide](connect/README.md).
 
 Now follow **[connect/README.md](connect/README.md)**:
 
@@ -78,8 +80,7 @@ it is not the connection path used here.
 
 ```bash
 ./gxr list
-./gxr up fraud-rings
-./gxr up edge-fleet
+./gxr start all
 ./gxr verify paysim-schemaless
 ./gxr query paysim-schemaless --number 1
 ```
@@ -107,10 +108,9 @@ fraud model. See [provenance and MIT attribution](vendor/README.md).
 ## Stop, test, and hand off
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v
+./gxr test
 .venv/bin/python tests/integration.py
-docker compose stop
-docker compose -f streaming/compose.yaml stop
+./gxr stop
 ```
 
 Integration tests require the three demos already loaded. They only read the

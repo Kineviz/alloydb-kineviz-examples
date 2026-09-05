@@ -36,11 +36,11 @@ Generation is deterministic. Fix code/data drift rather than loosening checks.
 ## Stop without deleting data
 
 ```bash
-docker compose stop
-docker compose -f streaming/compose.yaml stop
+./gxr stop
 ```
 
-The volumes persist. `docker compose up -d --wait` restarts the services.
+The volumes persist. `./gxr start` restarts and verifies the PaySim database;
+`./gxr replay --via kafka` starts the broker when needed and replays the events.
 
 ## Explicit destructive operations (only when requested)
 

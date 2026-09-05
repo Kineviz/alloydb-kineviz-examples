@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ ! -x "$repo_dir/.venv/bin/python" ]]; then
-  echo 'REMEDIATION: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt' >&2
-  exit 1
-fi
-exec "$repo_dir/.venv/bin/python" "$repo_dir/tools/demo.py" "$@"
+exec python3 "$repo_dir/tools/launch.py" "$@"

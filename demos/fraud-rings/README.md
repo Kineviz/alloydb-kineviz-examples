@@ -1,7 +1,7 @@
 # Shared devices and payment rings
 
 ```bash
-./gxr up fraud-rings
+./gxr start fraud-rings
 ./gxr verify fraud-rings
 ```
 

@@ -8,11 +8,10 @@ Database Proxy, paste an API URL, or configure the SQL import panel.
 
 The native connector needs the **PostgreSQL 19 SQL/PGQ build of AlloyDB Omni**.
 The standard Omni 16.x image is not compatible. Use the pinned preview image and
-one-time setup in the [root quick start](../README.md#quick-start), then:
+setup in the [root quick start](../README.md#quick-start):
 
 ```bash
-./gxr up paysim-schemaless
-./gxr verify paysim-schemaless
+./gxr start
 ```
 
 Verification must report **13,666 nodes**, **25,266 edges**, **8 shared identifier
@@ -20,9 +19,9 @@ values** and **4 shared values connected by a direct transfer**. The four values
 belong to one planted four-account ring—not four rings. For an actors-only replay
 start, use the separate [streaming instructions](../streaming/README.md).
 
-If you already have a compatible AlloyDB Omni instance, skip Compose and point
+If you already have a compatible AlloyDB Omni instance, skip `start` and point
 `.env` at a **dedicated demo database**, with an account allowed to create its
-demo schemas. Do not run these loaders against production tables. Probe your
+demo schemas. Use `./gxr up <demo>` to load and verify it. Do not run these loaders against production tables. Probe your
 server first:
 
 ```sql
@@ -33,8 +32,8 @@ FROM information_schema.property_graphs;
 
 Graph storage in this repo is namespaced. Desktop 0.19.0 takes the **graph name**,
 not a `schema.graph` pair. Its login's `search_path` must include the graph schema.
-The reader helper below sets this; the quick start sets it on the dedicated demo
-database for its owner. Graph names must be unique across that database.
+The reader helper below sets this for the Desktop login. Graph names must be
+unique across that database.
 
 ## 2. Download the current Desktop release from kineviz.com
 
@@ -61,7 +60,8 @@ the pinned database preview is x86-64 even when Desktop runs natively on ARM.
 
 ## 3. Create a read-only database login
 
-After loading the demos you want to explore:
+**`./gxr start` already performs this step.** For a separately configured database,
+after loading the demos you want to explore:
 
 ```bash
 .venv/bin/python tools/create_reader.py
@@ -71,13 +71,15 @@ After loading the demos you want to explore:
 This creates `kineviz_demo_reader`, grants SELECT on the installed demo graphs
 and their backing relations, and writes its generated password to the ignored
 `secrets/reader.env` file (permissions 600). It does not change your admin password
-and refuses to replace an existing role. Keep the writer credentials in `.env`
+and reuses an existing reader only if its saved credentials authenticate. It
+refuses to replace a role with missing credentials. Keep the writer credentials in `.env`
 for loading/replay; use the reader credentials in Desktop.
 
-If you add another demo later, an administrator must explicitly grant its schema,
-tables and graph to the reader and extend its database-specific `search_path`.
-Do not recreate the login or broaden it to all databases. Resetting a demo also
-removes its object grants; regrant access after rebuilding it.
+If you add another demo with `start`, its repo-owned schema, tables and graph are
+granted to the reader and its database-specific `search_path` is updated. With
+the lower-level `up` command, rerun the reader helper above. It never rotates the
+password or grants access to unrelated schemas. After an explicitly requested
+reset, rerun setup to rebuild the graph and restore its reader grants.
 
 ## 4. Create the project
 

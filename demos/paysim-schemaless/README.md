@@ -1,7 +1,7 @@
 # PaySim-style payments on AlloyDB Omni
 
 ```bash
-./gxr up paysim-schemaless
+./gxr start paysim-schemaless
 ./gxr verify paysim-schemaless
 ```
 

@@ -10,8 +10,7 @@ No graphxr-database-proxy is involved in either replay route.
 On a new dedicated demo database, before the full PaySim load:
 
 ```bash
-./gxr up paysim-schemaless --entities-only
-./gxr verify paysim-schemaless --entities-only
+./gxr start --entities-only
 ```
 
 This seeds 1,633 non-transaction nodes and 1,200 identifier edges. There are eight
@@ -22,17 +21,17 @@ its schema using [the cleanup guide](../docs/TROUBLESHOOTING.md).
 ## Route 1: direct PostgreSQL replay
 
 ```bash
-.venv/bin/python streaming/replay.py --via direct --seconds 60
+./gxr replay
 ```
 
 ## Route 2: preserve the Kafka leg
 
 ```bash
-.venv/bin/pip install -r streaming/requirements.txt
-docker compose -f streaming/compose.yaml up -d --wait
-.venv/bin/python streaming/replay.py --via kafka --seconds 60
+./gxr replay --via kafka
 ```
 
+The Kafka command installs its dependency and starts the broker automatically.
+Both replay commands verify the final graph and default to a 60-second target.
 Kafka is local-only on port 19096, distinct from the source repo's broker.
 The producer and database sink run on your host in this small lab harness;
 only the broker is containerized. Each run creates and prints a fresh topic.
@@ -63,4 +62,4 @@ dashboard to refresh. The native connector is live when queried; it is not an
 automatic canvas subscription. Replaying onto a full dataset tests idempotency
 but will not make the graph appear to grow.
 
-Stop without removing data: `docker compose -f streaming/compose.yaml stop`.
+Stop the database and broker without removing data: `./gxr stop`.
