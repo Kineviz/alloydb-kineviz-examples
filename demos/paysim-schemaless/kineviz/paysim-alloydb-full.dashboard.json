@@ -1,0 +1,379 @@
+{
+  "version": "2.1",
+  "id": "paysim-alloydb-full",
+  "title": "PaySim · AlloyDB full",
+  "icon": "user-defined-search-web graphxr-search-web",
+  "layout": {
+    "columns": 12,
+    "rowHeight": 74,
+    "gap": 9
+  },
+  "sources": [
+    {
+      "id": "landed",
+      "kind": "db",
+      "query": "SELECT count(*)::float8 AS landed FROM (SELECT id, (properties->>'amount')::numeric AS amount, (properties->>'isfraud')::boolean AS fraud, properties->>'timestamp' AS timestamp FROM paysim_demo.graphnode WHERE label='transaction') t",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 5000
+      }
+    },
+    {
+      "id": "totals",
+      "kind": "db",
+      "query": "SELECT round(COALESCE(sum(amount),0)/1000000,2)::float8 AS volume_m FROM (SELECT id, (properties->>'amount')::numeric AS amount, (properties->>'isfraud')::boolean AS fraud, properties->>'timestamp' AS timestamp FROM paysim_demo.graphnode WHERE label='transaction') t",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 5000
+      }
+    },
+    {
+      "id": "risk",
+      "kind": "db",
+      "query": "SELECT round(COALESCE(sum(amount) FILTER (WHERE fraud),0),0)::float8 AS at_risk, round(100*COALESCE(sum(amount) FILTER (WHERE fraud),0)/GREATEST(COALESCE(sum(amount),0),1),2)::float8 AS pct_value, round(COALESCE(max(amount) FILTER (WHERE fraud),0),0)::float8 AS biggest FROM (SELECT id, (properties->>'amount')::numeric AS amount, (properties->>'isfraud')::boolean AS fraud, properties->>'timestamp' AS timestamp FROM paysim_demo.graphnode WHERE label='transaction') t",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 5000
+      }
+    },
+    {
+      "id": "daily",
+      "kind": "db",
+      "query": "SELECT left(timestamp,10) AS day, CASE WHEN fraud THEN 'fraud' ELSE 'legitimate' END AS kind, round(sum(amount),2)::float8 AS volume FROM (SELECT id, (properties->>'amount')::numeric AS amount, (properties->>'isfraud')::boolean AS fraud, properties->>'timestamp' AS timestamp FROM paysim_demo.graphnode WHERE label='transaction') t GROUP BY 1,2 ORDER BY day",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 5000
+      }
+    },
+    {
+      "id": "bands",
+      "kind": "db",
+      "query": "WITH bands AS (SELECT floor(log(GREATEST(amount,1)))::int AS decade, fraud FROM (SELECT id, (properties->>'amount')::numeric AS amount, (properties->>'isfraud')::boolean AS fraud, properties->>'timestamp' AS timestamp FROM paysim_demo.graphnode WHERE label='transaction') t) SELECT decade, CASE decade WHEN 0 THEN 'under $10' WHEN 1 THEN '$10–99' WHEN 2 THEN '$100–999' WHEN 3 THEN '$1k–10k' WHEN 4 THEN '$10k–100k' ELSE '$100k+' END AS band, round(100.0*count(*) FILTER (WHERE fraud)/count(*),1)::float8 AS percent_fraud FROM bands GROUP BY decade ORDER BY decade",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 5000
+      }
+    },
+    {
+      "id": "verdict",
+      "kind": "db",
+      "query": "WITH shared AS (SELECT identifier_id FROM paysim_demo.identifiers GROUP BY identifier_id HAVING count(DISTINCT client_id)>1), classified AS (SELECT s.identifier_id, CASE WHEN EXISTS (SELECT 1 FROM paysim_demo.identifiers a JOIN paysim_demo.identifiers b ON b.identifier_id=a.identifier_id AND b.client_id<>a.client_id JOIN paysim_demo.payments p ON p.sender_id=a.client_id AND p.receiver_id=b.client_id WHERE a.identifier_id=s.identifier_id) THEN 'with direct transfers' ELSE 'no direct transfers' END AS verdict FROM shared s) SELECT verdict, count(*)::float8 AS identities FROM classified GROUP BY verdict",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 10000
+      }
+    },
+    {
+      "id": "suspects",
+      "kind": "db",
+      "query": "SELECT p.sender_name AS suspect, count(*)::float8 AS txns, round(sum(p.amount),2)::float8 AS moved FROM paysim_demo.payments p JOIN paysim_demo.graphnode t ON t.id=p.transaction_id WHERE (t.properties->>'isfraud')::boolean GROUP BY p.sender_name ORDER BY moved DESC LIMIT 8",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 10000
+      }
+    },
+    {
+      "id": "ringFanIn",
+      "kind": "db",
+      "query": "WITH shared AS (SELECT DISTINCT a.client_id FROM paysim_demo.identifiers a JOIN paysim_demo.identifiers b ON a.identifier_id=b.identifier_id AND a.client_id<>b.client_id) SELECT p.receiver_name AS collector, round(sum(p.amount),2)::float8 AS received FROM paysim_demo.payments p JOIN shared s ON s.client_id=p.sender_id WHERE p.receiver_type='client' GROUP BY p.receiver_name ORDER BY received DESC LIMIT 8",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 10000
+      }
+    },
+    {
+      "id": "mules",
+      "kind": "db",
+      "query": "SELECT p.receiver_name AS mule, round(sum(p.amount),2)::float8 AS taken FROM paysim_demo.payments p JOIN paysim_demo.graphnode m ON m.id=p.receiver_id WHERE m.properties->>'client_type'='MULE' GROUP BY p.receiver_name ORDER BY taken DESC LIMIT 10",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 10000
+      }
+    },
+    {
+      "id": "exitRisk",
+      "kind": "db",
+      "query": "SELECT CASE WHEN high_risk THEN 'high-risk merchants' ELSE 'normal merchants' END AS destination, 'merchant payments' AS channel, round(sum(amount),2)::float8 AS volume FROM paysim_demo.payments WHERE receiver_type='merchant' GROUP BY high_risk",
+      "refresh": {
+        "mode": "interval",
+        "everyMs": 10000
+      }
+    },
+    {
+      "id": "sel",
+      "kind": "canvasSelection",
+      "refresh": {
+        "mode": "onSelect"
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "id": "kpiLanded",
+      "type": "kpi",
+      "title": "Transactions landed",
+      "sourceId": "landed",
+      "enc": {
+        "value": "landed",
+        "agg": "max"
+      },
+      "w": 3,
+      "h": 2
+    },
+    {
+      "id": "kpiVolume",
+      "type": "kpi",
+      "title": "Volume moved ($M)",
+      "sourceId": "totals",
+      "enc": {
+        "value": "volume_m",
+        "agg": "max"
+      },
+      "w": 3,
+      "h": 2
+    },
+    {
+      "id": "kpiAtRisk",
+      "type": "kpi",
+      "title": "Synthetic fraud-labelled value ($)",
+      "sourceId": "risk",
+      "enc": {
+        "value": "at_risk",
+        "agg": "max"
+      },
+      "w": 3,
+      "h": 2
+    },
+    {
+      "id": "kpiBiggest",
+      "type": "kpi",
+      "title": "Largest fraud-labelled payment ($)",
+      "sourceId": "risk",
+      "enc": {
+        "value": "biggest",
+        "agg": "max"
+      },
+      "w": 3,
+      "h": 2
+    },
+    {
+      "id": "gaugeValue",
+      "type": "gauge",
+      "title": "Fraud as % of VALUE moved",
+      "sourceId": "risk",
+      "enc": {
+        "value": "pct_value",
+        "agg": "max"
+      },
+      "target": 5,
+      "warn": 2,
+      "crit": 4,
+      "w": 3,
+      "h": 3
+    },
+    {
+      "id": "dailyVolume",
+      "type": "timeseries",
+      "title": "Volume per simulated day — fraud stacked on top",
+      "sourceId": "daily",
+      "chart": {
+        "spec": {
+          "chartType": "Area Chart",
+          "encodings": {
+            "x": {
+              "field": "day"
+            },
+            "y": {
+              "field": "volume"
+            },
+            "color": {
+              "field": "kind"
+            }
+          }
+        },
+        "semanticTypes": {
+          "day": "Time",
+          "volume": "Quantity",
+          "kind": "Nominal"
+        },
+        "colors": {
+          "fraud": "#c9635b",
+          "legitimate": "#5aa9e6"
+        }
+      },
+      "w": 9,
+      "h": 3
+    },
+    {
+      "id": "verdictSplit",
+      "type": "bars",
+      "title": "Shared identities — direct-transfer evidence",
+      "sourceId": "verdict",
+      "chart": {
+        "spec": {
+          "chartType": "Pie Chart",
+          "encodings": {
+            "color": {
+              "field": "verdict"
+            },
+            "size": {
+              "field": "identities"
+            }
+          }
+        },
+        "semanticTypes": {
+          "verdict": "Nominal",
+          "identities": "Quantity"
+        },
+        "colors": {
+          "with direct transfers": "#c9635b",
+          "no direct transfers": "#6f7787"
+        }
+      },
+      "w": 4,
+      "h": 4
+    },
+    {
+      "id": "suspectList",
+      "type": "table",
+      "title": "Who moved the fraud money",
+      "sourceId": "suspects",
+      "enc": {
+        "label": "suspect",
+        "value": "moved"
+      },
+      "w": 4,
+      "h": 4
+    },
+    {
+      "id": "ringMoney",
+      "type": "bars",
+      "title": "Where money from identity-sharing accounts lands",
+      "sourceId": "ringFanIn",
+      "chart": {
+        "spec": {
+          "chartType": "Bar Chart",
+          "encodings": {
+            "x": {
+              "field": "collector"
+            },
+            "y": {
+              "field": "received"
+            }
+          }
+        },
+        "semanticTypes": {
+          "collector": "Nominal",
+          "received": "Quantity"
+        }
+      },
+      "sort": "valueDesc",
+      "w": 4,
+      "h": 4
+    },
+    {
+      "id": "bandRisk",
+      "type": "bars",
+      "title": "% of each size band that is fraud",
+      "sourceId": "bands",
+      "chart": {
+        "spec": {
+          "chartType": "Lollipop Chart",
+          "encodings": {
+            "x": {
+              "field": "band"
+            },
+            "y": {
+              "field": "percent_fraud"
+            }
+          }
+        },
+        "semanticTypes": {
+          "band": "Nominal",
+          "percent_fraud": "Quantity"
+        }
+      },
+      "w": 4,
+      "h": 4,
+      "color": "#c9635b"
+    },
+    {
+      "id": "muleTake",
+      "type": "bars",
+      "title": "Taken by mules ($)",
+      "sourceId": "mules",
+      "chart": {
+        "spec": {
+          "chartType": "Bar Chart",
+          "encodings": {
+            "x": {
+              "field": "mule"
+            },
+            "y": {
+              "field": "taken"
+            }
+          }
+        },
+        "semanticTypes": {
+          "mule": "Nominal",
+          "taken": "Quantity"
+        }
+      },
+      "sort": "valueDesc",
+      "w": 4,
+      "h": 4
+    },
+    {
+      "id": "exitBar",
+      "type": "bars",
+      "title": "Where value leaves the network",
+      "sourceId": "exitRisk",
+      "chart": {
+        "spec": {
+          "chartType": "Stacked Bar Chart",
+          "encodings": {
+            "x": {
+              "field": "channel"
+            },
+            "color": {
+              "field": "destination"
+            },
+            "y": {
+              "field": "volume"
+            }
+          }
+        },
+        "semanticTypes": {
+          "channel": "Nominal",
+          "destination": "Nominal",
+          "volume": "Quantity"
+        },
+        "colors": {
+          "high-risk merchants": "#c9971f",
+          "normal merchants": "#6f7787"
+        }
+      },
+      "w": 4,
+      "h": 4
+    },
+    {
+      "id": "kpiSelected",
+      "type": "kpi",
+      "title": "Selected on canvas",
+      "sourceId": "sel",
+      "enc": {
+        "agg": "count"
+      },
+      "w": 3,
+      "h": 2
+    },
+    {
+      "id": "notes",
+      "type": "markdown",
+      "title": "Reading this as an investigator",
+      "text": "**Synthetic labels, not a verdict.** Risk totals use the generator’s planted fraud labels. They are test fixtures, not an automated fraud finding. The gauge measures their share of payment value.\n\n**Shared identity is a lead.** The identity chart counts shared identifier values, not rings or accounts. Direct transfers between holders add behavioral evidence; neither their presence nor absence proves intent. The planted family shares identifiers without exchanging payments.\n\n**Watch the replay.** Metrics refresh every 5–10 seconds while this dashboard is open. An actors-only start has zero transactions and empty payment charts. Run `./gxr replay` to populate them. Canvas selection counts objects selected in the canvas; this dashboard does not automatically load or expand a graph.",
+      "w": 9,
+      "h": 2
+    }
+  ]
+}

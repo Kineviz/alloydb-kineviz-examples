@@ -159,6 +159,18 @@ to every insert. Do not import the old Spanner project or GQL dashboard unchange
 
 ## 6. Load the live PaySim dashboard
 
+For the **full 14-card dashboard**, import
+[`paysim-alloydb-full.dashboard.json`](../demos/paysim-schemaless/kineviz/paysim-alloydb-full.dashboard.json)
+and open **Dashboard → PaySim · AlloyDB full (imported)**. It includes the
+original risk KPIs, gauge, daily-volume chart, shared-identifier comparison,
+sender table, recipient flows, size bands, mule receipts, merchant destinations,
+canvas selection count and investigator notes. All ten SQL sources were tested
+against the full 12,033-transaction dataset. Refresh intervals are 5–10 seconds.
+Identity categories describe direct-transfer evidence, not confirmed fraud.
+The canvas-selection card follows your canvas selection; no graph is auto-loaded.
+
+The earlier **six-card quick view** remains available separately:
+
 In your connected PaySim project, click **Dashboard** in the left sidebar, then
 **Import** and choose
 [`paysim-alloydb-live.dashboard.json`](../demos/paysim-schemaless/kineviz/paysim-alloydb-live.dashboard.json).
