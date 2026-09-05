@@ -157,6 +157,28 @@ During a replay, rerun the query or refresh a configured dashboard. The database
 graph reads current rows, but an existing canvas does not automatically subscribe
 to every insert. Do not import the old Spanner project or GQL dashboard unchanged.
 
+## 6. Load the live PaySim dashboard
+
+In your connected PaySim project, click **Dashboard** in the left sidebar, then
+**Import** and choose
+[`paysim-alloydb-live.dashboard.json`](../demos/paysim-schemaless/kineviz/paysim-alloydb-live.dashboard.json).
+This version uses AlloyDB SQL, not the original Spanner queries. Import saves a
+copy in this project's dashboard library, with `(imported)` appended to its name.
+
+To reopen it, choose **Dashboard → PaySim · AlloyDB live (imported)**:
+
+![Open Dashboard in the left sidebar and select the PaySim AlloyDB live card](../docs/images/alloydb-dashboard-access.jpg)
+
+The dashboard refreshes every five seconds while open. After actors-only setup,
+1,633 actors/identifiers and zero transactions are expected; the payment tables
+remain empty until replay. Synthetic fraud labels are generator fixtures, not
+an investigator's verdict.
+
+![Live dashboard before replay with 1633 actors and zero transactions](../docs/images/alloydb-dashboard.jpg)
+
+With the dashboard open, run `./gxr replay` from this repository to populate it.
+Replay changes the database; importing or opening this dashboard does not.
+
 ## Connecting from another host
 
 The default listener is intentionally loopback-only. For a remote preview host,

@@ -70,6 +70,9 @@ Desktop queries the database directly. Keep it and the database running while
 exploring. **Query → SQL → PostgreSQL is a different, table-import workflow**;
 it is not the connection path used here.
 
+For a live replay display, [import the PaySim dashboard](connect/README.md#6-load-the-live-paysim-dashboard).
+The guide includes screenshots showing where to find it.
+
 ## Examples
 
 | Demo | Database schema / graph | What to inspect |
