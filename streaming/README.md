@@ -5,6 +5,38 @@ adds those recorded events over time; it does not generate new transactions
 live. Kineviz's native AlloyDB project connection reads the same property graph.
 No graphxr-database-proxy is involved in either replay route.
 
+## Clear transactions and start streaming in one command
+
+From the repository root, with Docker running:
+
+```bash
+./gxr replay --restart
+```
+
+**Destructive by design:** `--restart` deletes all transaction nodes and their
+incident edges in this repo's owned `paysim_demo` schema, including custom
+transactions there. It preserves actors, shared identifiers, the property graph
+and other demo schemas. Synthetic payments can be regenerated; custom transaction
+changes require a backup to recover. Stop any other replay process first.
+
+The command prepares Python and the local database, clears previous payments,
+seeds and verifies 1,633 actors/identifiers and 1,200 identifier edges, configures
+the reader, then replays all 12,033 payments with a 60-second target and verifies
+the final counts. It also works on a fresh local demo database. No schema reset
+or separate setup command is needed.
+
+For Kafka, use **`./gxr replay --restart --via kafka`**. Its dependency and broker
+are prepared before transactions are cleared.
+
+Open **Dashboard → PaySim · AlloyDB full (imported)** to watch the metrics grow;
+[import the dashboard first](../connect/README.md#6-load-the-live-paysim-dashboard)
+if needed. Desktop setup and dashboard import remain manual. Existing canvas
+nodes do not disappear automatically when database transactions are deleted.
+
+Deletion and actors-only verification commit together. A later replay failure
+can leave a partial dataset: retry `./gxr replay` **without** `--restart` to retain
+landed rows. Without `--restart`, replay never deletes existing transactions.
+
 ## Start from actors and identifiers only
 
 On a new dedicated demo database, before the full PaySim load:

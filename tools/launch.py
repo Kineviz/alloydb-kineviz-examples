@@ -55,6 +55,28 @@ def local_database():
             conn.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier('kineviz_demo')))
 
 
+def restart_transactions():
+    from demo import connect, generate, owned, preflight, setup, verify
+    demo = 'paysim-schemaless'
+    generate(demo)
+    with connect() as conn:
+        preflight(conn)
+        owned(conn, 'paysim_demo', create=True)
+        exists = conn.execute("SELECT to_regclass('paysim_demo.graphnode')").fetchone()[0]
+        if exists:
+            # Lock both tables until deletion and actors-only verification commit.
+            # Never DROP the schema: preserve the graph, grants and identifiers.
+            conn.execute('LOCK TABLE paysim_demo.graphnode, paysim_demo.graphedge IN EXCLUSIVE MODE')
+            conn.execute("DELETE FROM paysim_demo.graphedge WHERE id IN (SELECT id FROM paysim_demo.graphnode WHERE label='transaction') OR dest_id IN (SELECT id FROM paysim_demo.graphnode WHERE label='transaction')")
+            removed = conn.execute("DELETE FROM paysim_demo.graphnode WHERE label='transaction'").rowcount
+        else:
+            removed = 0
+        setup(conn, demo, True)
+        verify(conn, demo, True)
+    print(f'Restart committed: removed {removed} transaction nodes and their incident edges. '
+          'Actors, identifiers and other demo schemas preserved. Replay regenerates the synthetic payments.', flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, epilog=
         'Other commands: list, up <demo>, verify <demo>, query <demo>, '
@@ -64,7 +86,8 @@ def main():
     start.add_argument('demo', nargs='?', default='paysim-schemaless', choices=(*DEMOS, 'all'))
     start.add_argument('--entities-only', action='store_true', help='Seed PaySim for replay without deleting existing data')
     subs.add_parser('stop', help='Stop this repo database and Kafka; preserve volumes')
-    replay = subs.add_parser('replay', help='Replay seeded PaySim and verify; never reset data')
+    replay = subs.add_parser('replay', help='Replay PaySim; optionally clear transactions first')
+    replay.add_argument('--restart', action='store_true', help='DESTRUCTIVE: delete all PaySim transaction nodes and incident edges, preserve actors, then replay (local demo only)')
     replay.add_argument('--via', choices=('direct', 'kafka'), default='direct')
     replay.add_argument('--seconds', type=float, default=60)
     subs.add_parser('test', help='Run unit tests (no database required)')
@@ -100,9 +123,16 @@ def main():
               'Reader credentials: secrets/reader.env (password not printed).\n'
               'See connect/README.md for screenshots and the final canvas check.')
     elif args.command == 'replay':
+        if args.restart:
+            local_database()
         if args.via == 'kafka':
             run(PYTHON, '-m', 'pip', 'install', '-r', 'streaming/requirements.txt')
             run('docker', 'compose', '-f', 'streaming/compose.yaml', 'up', '-d', '--wait')
+        if args.restart:
+            print('Restart requested: clearing PaySim transactions before replay. Stop other replay writers first.', flush=True)
+            restart_transactions()
+            run(PYTHON, ROOT / 'tools/create_reader.py')
+            run(PYTHON, ROOT / 'tools/check_reader.py')
         run(PYTHON, ROOT / 'streaming/replay.py', '--via', args.via, '--seconds', str(args.seconds))
     elif args.command == 'test':
         run(PYTHON, '-m', 'unittest', 'discover', '-s', 'tests', '-v')
@@ -113,5 +143,7 @@ if __name__ == '__main__':
         main()
     except Exception as exc:
         detail = str(exc) if isinstance(exc, ValueError) else type(exc).__name__
-        print(f'REMEDIATION: {detail}. See docs/TROUBLESHOOTING.md. No data was reset.', file=sys.stderr)
+        print(f'REMEDIATION: {detail}. See docs/TROUBLESHOOTING.md. '
+              'If --restart committed, transactions were cleared; replay may be incomplete. '
+              'Run replay without --restart to retry without clearing again.', file=sys.stderr)
         sys.exit(1)

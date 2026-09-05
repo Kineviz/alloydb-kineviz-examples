@@ -1,5 +1,10 @@
 # Verification record
 
+The `gxr replay --restart` launcher has 17 passing unit tests in the suite,
+including ownership checks, transaction-only deletion and opt-in restart.
+Its destructive end-to-end path has not been run against the user's current
+database; the existing transaction data was preserved during this update.
+
 Tested September 4–5, 2026 in an isolated local Compose deployment. The user's
 pre-existing AlloyDB and Spanner deployments were not modified.
 

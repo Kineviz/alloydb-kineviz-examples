@@ -13,7 +13,9 @@ path = directory / 'reader.env'
 existing = dotenv_values(path) if path.exists() else None
 if existing is not None and (existing.get('PGUSER') != role or not existing.get('PGPASSWORD')):
     raise SystemExit('Invalid reader credential file; refusing to overwrite it.')
-password = existing['PGPASSWORD'] if existing else secrets.token_hex(24)
+# GraphXR's legacy credential decoder mistakes long lowercase-alphanumeric
+# plaintext for ciphertext. Keep new passwords outside that pattern.
+password = existing['PGPASSWORD'] if existing else 'Kv-' + secrets.token_hex(24) + '!'
 with connect() as conn:
     preflight(conn)
     database = conn.execute('SELECT current_database()').fetchone()[0]
