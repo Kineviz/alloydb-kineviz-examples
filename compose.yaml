@@ -1,0 +1,20 @@
+name: alloydb-kineviz-examples
+services:
+  db:
+    # SQL/PGQ preview, NOT the standard 16.x Omni image.
+    image: us-docker.pkg.dev/alloydb-omni-custom-releases/gcr.io/alloydbomni@sha256:fc414e1d1cbd3933cecb39e754a964ed3345c84b72a946bf7a529a058d490987
+    platform: linux/amd64
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - alloydb-data:/var/lib/postgresql/data
+    shm_size: 1gb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+volumes:
+  alloydb-data:

@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS site (id text PRIMARY KEY,name text,region text,opened_date date);
+CREATE TABLE IF NOT EXISTS gateway (id text PRIMARY KEY,model text,installed_date date);
+CREATE TABLE IF NOT EXISTS device (id text PRIMARY KEY,kind text,serial text,criticality text);
+CREATE TABLE IF NOT EXISTS firmware (id text PRIMARY KEY,version text,released_date date,advisory text);
+CREATE TABLE IF NOT EXISTS technician (id text PRIMARY KEY,name text,certification text);
+CREATE TABLE IF NOT EXISTS hostedat (gateway_id text PRIMARY KEY REFERENCES gateway(id),site_id text REFERENCES site(id),rack text);
+CREATE TABLE IF NOT EXISTS connectedto (device_id text PRIMARY KEY REFERENCES device(id),gateway_id text REFERENCES gateway(id),port bigint);
+CREATE TABLE IF NOT EXISTS runsfirmware (device_id text PRIMARY KEY REFERENCES device(id),firmware_id text REFERENCES firmware(id),applied_date date);
+CREATE TABLE IF NOT EXISTS covers (technician_id text REFERENCES technician(id),site_id text REFERENCES site(id),since_date date,PRIMARY KEY(technician_id,site_id));
+CREATE TABLE IF NOT EXISTS dependson (device_id text REFERENCES device(id),depends_on_id text REFERENCES device(id),reason text,PRIMARY KEY(device_id,depends_on_id));
+CREATE INDEX IF NOT EXISTS gateway_devices ON connectedto(gateway_id);
+CREATE INDEX IF NOT EXISTS dependent_devices ON dependson(depends_on_id);
